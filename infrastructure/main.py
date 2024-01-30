@@ -12,8 +12,11 @@ if __name__ == "__main__":
 
     main_template = Template()
 
+    application_prefix = 'DevWorkflow'
+    app_parameter_store_path = '/SmyleeDevWorkflows'
+
     # parameters
-    primary_kms_arn = os.environ['KMS_KEY_ID_ARN']
+    primary_kms_arn = os.getenv('KMS_KEY_ID_ARN')
     github_app_private_key_ssm_path = Parameter(
         "GHAppPrivateKeySSMPath",
         Type="String",
@@ -41,11 +44,11 @@ if __name__ == "__main__":
         dispatcher_function_s3_zip_path_param_name,
         Type="String"
     )
-    dispatcher_function = FunctionDispatcher("DevWorkflow-DispatcherFunction",
+    dispatcher_function = FunctionDispatcher(application_prefix,
                                              s3_bucket_for_artifacts_param_name,
                                              dispatcher_function_s3_zip_path_param_name,
                                              api_gateway_rest_api,
-                                             '/SmyleeDevWorkflows',
+                                             app_parameter_store_path,
                                              primary_kms_arn)
     main_template = dispatcher_function.add_resource(main_template)
 

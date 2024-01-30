@@ -1,9 +1,8 @@
 import logging
+import os
 
 import boto3
 from botocore.exceptions import ClientError
-from github import GithubIntegration
-from github import Auth
 
 import shared.github.payload_validator as payload_validator
 from dispatch_event import dispatch
@@ -24,7 +23,6 @@ ssm_client = boto3_session.client(
 try:
     app_parameters = ssm_client.get_parameters(
         Names=[
-            '/SmyleeDevWorkflows/GitHubApp/Id',
             '/SmyleeDevWorkflows/GitHubApp/WebhookSecret'
         ],
         WithDecryption=True
@@ -32,11 +30,7 @@ try:
 except ClientError as e:
     raise e
 
-gh_app_id = app_parameters['Parameters'][0]['Value']
-gh_webhook_secret = app_parameters['Parameters'][1]['Value']
-
-github_auth = Auth.AppAuth(gh_app_id, gh_webhook_secret)
-github_client = GithubIntegration(auth=github_auth)
+gh_webhook_secret = app_parameters['Parameters'][0]['Value']
 
 
 def lambda_handler(event, context):
