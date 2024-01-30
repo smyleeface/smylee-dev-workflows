@@ -6,6 +6,7 @@ from github import GithubIntegration
 from github import Auth
 
 import shared.github.payload_validator as payload_validator
+from dispatch_event import dispatch
 
 
 logger = logging.getLogger()
@@ -44,6 +45,10 @@ def lambda_handler(event, context):
     signature = headers.get('X-Hub-Signature-256', '')
     payload_validator.verify_signature(payload, gh_webhook_secret, signature)
     logger.info("Signature verified!")
+
+    github_event_type = headers.get('X-GitHub-Event', '')
+    dispatch(payload, github_event_type)
+
     return {
         "isBase64Encoded": False,
         "statusCode": 200,
