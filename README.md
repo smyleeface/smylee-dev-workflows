@@ -15,17 +15,28 @@ Prerequisites
       ```
       aws ssm put-parameter \
         --name '/SmyleeDevWorkflows/GitHubApp/Id' \
-        --description "GitHub App Id used to sign access token requests" \
+        --description 'GitHub App Id used to sign access token requests' \
         --type String \
         --value file://secrets/github_app_id
       ```
     - Create a new private key and save it to the secrets directory naming it `github_app_pk.pem`.
-    - Run the command below to add the secret to the AWS Secrets Manager.
+    - Run the command below to add the GitHub private key to the AWS Parameter Store using the KMS Key id ARN in environment variables.
       ```
-      aws secretsmanager create-secret \
+      aws ssm put-parameter \
         --name '/SmyleeDevWorkflows/GitHubApp/PrivateKey' \
-        --description "GitHub App private key used to sign access token requests" \
-        --secret-string file://secrets/github_app_pk.pem
+        --description 'GitHub App private key used to sign access token requests' \
+        --type SecureString \
+        --key-id $KMS_KEY_ID_ARN \
+        --value file://secrets/github_app_pk.pem
+      ```
+    - Run the command below to add the GitHub webhook secret to the AWS Parameter Store using the KMS Key id ARN in environment variables.
+      ```
+      aws ssm put-parameter \
+        --name '/SmyleeDevWorkflows/GitHubApp/WebhookSecret' \
+        --description 'GitHub App webhook secert used to verify payload sha' \
+        --type SecureString \
+        --key-id $KMS_KEY_ID_ARN \
+        --value file://secrets/github_webhook_secret
       ```
 - Slack account
 # TODO add to secrets manager
