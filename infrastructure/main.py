@@ -2,7 +2,7 @@ import os
 
 from troposphere import Template, Parameter, ImportValue
 from api_gateway import apis
-from dispatcher_function import DispatcherFunction
+from function_dispatcher import FunctionDispatcher
 
 import sys
 
@@ -41,7 +41,7 @@ if __name__ == "__main__":
         dispatcher_function_s3_zip_path_param_name,
         Type="String"
     )
-    dispatcher_function = DispatcherFunction("DevWorkflow-DispatcherFunction",
+    dispatcher_function = FunctionDispatcher("DevWorkflow-DispatcherFunction",
                                              s3_bucket_for_artifacts_param_name,
                                              dispatcher_function_s3_zip_path_param_name,
                                              api_gateway_rest_api,

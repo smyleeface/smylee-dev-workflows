@@ -9,7 +9,7 @@ import troposphere.apigateway as apigateway
 from awacs.aws import Action, Allow, PolicyDocument, Principal, Statement
 
 
-class DispatcherFunction:
+class FunctionDispatcher:
 
     def __init__(self, function_name, application_s3_param, application_zip_param, api_gateway_rest_api, app_parameter_store_path, primary_kms_arn):
         self._function_name = function_name
