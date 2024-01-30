@@ -11,10 +11,13 @@ from awacs.aws import Action, Allow, PolicyDocument, Principal, Statement
 
 class DispatcherFunction:
 
-    def __init__(self, function_name, application_zip, api_gateway_rest_api):
+    def __init__(self, function_name, application_s3_param, application_zip_param, api_gateway_rest_api, app_parameter_store_path, primary_kms_arn):
         self._function_name = function_name
-        self._application_zip = application_zip
+        self._application_s3_param = application_s3_param
+        self._application_zip_param = application_zip_param
         self._api_gateway_rest_api = api_gateway_rest_api
+        self._app_parameter_store_path = app_parameter_store_path
+        self._primary_kms_arn = primary_kms_arn
         self.api_path_part = 'dispatcher'
 
     def get_function_definition(self, function_role) -> awslambda.Function:
@@ -26,8 +29,9 @@ class DispatcherFunction:
             Runtime="python3.11",
             Timeout=60,
             Code=awslambda.Code(
-                ZipFile=self._application_zip
-            )
+                S3Bucket=Ref(self._application_s3_param),
+                S3Key=Ref(self._application_zip_param)
+            ),
         )
 
     def get_function_api_gateway_resource(self) -> apigateway.Resource:
@@ -53,6 +57,7 @@ class DispatcherFunction:
     def add_resource(self, current_template: Template) -> Template:
         function_role = self.get_function_role_and_policy()
         function_definition = self.get_function_definition(function_role)
+        function_event_invoke_config = self.get_function_event_invoke_config(function_definition)
         awslambda_permission = self.get_lambda_trigger_permissions(function_definition)
         api_gateway_resource = self.get_function_api_gateway_resource()
         api_gateway_method = self.get_function_api_gateway_method(api_gateway_resource, function_definition)
@@ -60,6 +65,7 @@ class DispatcherFunction:
         current_template.resources['DevWorkflowApiGatewayDeployment'].resource['DependsOn'] = api_gateway_method.title
         current_template.add_resource(function_role)
         current_template.add_resource(function_definition)
+        current_template.add_resource(function_event_invoke_config)
         current_template.add_resource(awslambda_permission)
         current_template.add_resource(api_gateway_resource)
         current_template.add_resource(api_gateway_method)
@@ -75,8 +81,7 @@ class DispatcherFunction:
                                                   ApiGatewayDefinition=Ref(self._api_gateway_rest_api),
                                                   PathPart=self.api_path_part))
 
-    @staticmethod
-    def get_function_role_and_policy() -> iam.Role:
+    def get_function_role_and_policy(self) -> iam.Role:
         allow_write_to_log_statement = Statement(
             Effect=Allow,
             Action=[
@@ -87,17 +92,37 @@ class DispatcherFunction:
             Resource=["*"],
         )
 
+        allow_get_parameter_statement = Statement(
+            Effect=Allow,
+            Action=[
+                Action("ssm", "GetParameter*"),
+            ],
+            Resource=[Sub("arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${AppParameterStorePath}/*",
+                          AppParameterStorePath=self._app_parameter_store_path)],
+        )
+
+        allow_kms_decrypt = Statement(
+            Effect=Allow,
+            Action=[
+                Action("kms", "Decrypt"),
+            ],
+            Resource=[self._primary_kms_arn],
+        )
+
         policy_document = PolicyDocument(
             Version="2012-10-17",
             Id="LambdaExecutionPolicy",
             Statement=[
-                allow_write_to_log_statement
+                allow_write_to_log_statement,
+                allow_get_parameter_statement,
+                allow_kms_decrypt
             ],
         )
 
+        # trust relationship for lambda
         assume_role_statement = Statement(
             Effect=Allow,
-            Principal=Principal("Service", ["lambda.amazonaws.com"]),
+            Principal=Principal("Service", ["lambda.amazonaws.com", "ssm.amazonaws.com"]),
             Action=[Action("sts", "AssumeRole")]
         )
 
@@ -122,6 +147,11 @@ class DispatcherFunction:
 
         return function_execution_role
 
-
-
-
+    @staticmethod
+    def get_function_event_invoke_config(function_definition: awslambda.Function) -> awslambda.EventInvokeConfig:
+        return awslambda.EventInvokeConfig(
+            "DevWorkflowEventInvokeConfig",
+            FunctionName=Ref(function_definition),
+            MaximumRetryAttempts=0,
+            Qualifier="$LATEST",
+        )
