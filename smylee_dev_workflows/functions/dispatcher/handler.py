@@ -4,12 +4,14 @@ import os
 import boto3
 from botocore.exceptions import ClientError
 
-import shared.github.payload_validator as payload_validator
+import smylee_dev_workflows.shared.github.payload_validator as payload_validator
 from dispatch_event import dispatch
 
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
+if os.environ.get('LOGGING_LEVEL', logging.INFO):
+    logger.setLevel(os.environ['LOGGING_LEVEL'])
 
 client = boto3.client('lambda')
 
