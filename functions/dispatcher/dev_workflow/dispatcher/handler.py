@@ -7,7 +7,6 @@ from dispatch_event import dispatch
 
 import dev_workflow.utils.github.payload_validator as payload_validator
 
-
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 if os.environ.get("LOGGING_LEVEL", logging.INFO):
