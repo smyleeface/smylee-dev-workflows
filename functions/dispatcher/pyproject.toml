@@ -1,0 +1,10 @@
+[project]
+name = "dev_workflow_dispatcher"
+version = "0.0.1"
+dependencies = [
+    "dev_workflow_utils @ file:///Users/pattyr/Projects/smylee-dev-workflows/shared/utils",
+    "boto3==1.28.42"
+]
+
+[tool.setuptools.packages]
+find = {}
