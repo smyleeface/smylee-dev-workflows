@@ -1,16 +1,15 @@
+import json
 import logging
 import os
 
 import boto3
 from botocore.exceptions import ClientError
-from dispatch_event import dispatch
+from .dispatch_event import dispatch
 
 import dev_workflow.utils.github.payload_validator as payload_validator
 
 logger = logging.getLogger()
-logger.setLevel(logging.INFO)
-if os.environ.get("LOGGING_LEVEL", logging.INFO):
-    logger.setLevel(os.environ["LOGGING_LEVEL"])
+logger.setLevel(os.environ.get("LOGGING_LEVEL", logging.INFO))
 
 client = boto3.client("lambda")
 
@@ -29,13 +28,17 @@ gh_webhook_secret = app_parameters["Parameters"][0]["Value"]
 
 
 def lambda_handler(event, context):
-    payload = event["body"]
+    payload_string = event.get("body", "{}")
+    payload = json.loads(payload_string)
     headers = event.get("headers", {})
+    logger.debug(payload)
+    logger.debug(headers)
     signature = headers.get("X-Hub-Signature-256", "")
-    payload_validator.verify_signature(payload, gh_webhook_secret, signature)
+    payload_validator.verify_signature(payload_string, gh_webhook_secret, signature)
     logger.info("Signature verified!")
 
     github_event_type = headers.get("X-GitHub-Event", "")
-    dispatch(payload, github_event_type)
+    action = payload.get("action", None)
+    dispatch(action, github_event_type)
 
     return {"isBase64Encoded": False, "statusCode": 200, "headers": {}, "body": "valid"}
