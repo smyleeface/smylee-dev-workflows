@@ -23,3 +23,5 @@ aws cloudformation deploy \
   --capabilities CAPABILITY_NAMED_IAM \
   --parameter-overrides DispatcherFunctionS3ZipPath=$DISPATCHER_FUNCTION_S3_ZIP_PATH \
                         BucketForUploadsUsWest2=$S3_BUCKET
+
+aws apigateway create-deployment --rest-api-id 6ofqx2gwr5 --description "Deployed from CLI - ${BUILD_ID}" --cli-input-json file://api_deployment.json

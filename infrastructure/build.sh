@@ -4,6 +4,7 @@ set -e
 
 source ../secrets/env_var
 
+REPO_ROOT=$(git rev-parse --show-toplevel)
 BUILD_DATA_PATH=build_data
 UUID=$(uuidgen)
 BUILD_ID=${UUID##*-}
@@ -15,30 +16,27 @@ DISPATCHER_FUNCTION_ZIP_FILENAME="dispatcher_application-${SHA}-${BUILD_ID}.zip"
 echo "############ BUILD_ID: $BUILD_ID"
 echo "############ DISPATCHER_FUNCTION_ZIP_FILENAME: $DISPATCHER_FUNCTION_ZIP_FILENAME"
 
-cd ../smylee_dev_workflows/functions/dispatcher
+cd ../functions/dispatcher
 
 # Ensure the build directory exists
 mkdir -p build
 
 # Install the Python dependencies from requirements.txt into the build directory
-#pip install -r requirements.txt -t build
 pip install --platform manylinux2014_x86_64 --only-binary=:all: --target build -r requirements.txt
 
 # Copy application code to directory
-cp -r handler.py build
-
-# Copy shared code to directory
-# TODO: convert the shared directory to a python package so it can be installed with pip during build
-cp -r ../../shared build
+#cp -r handler.py build
+#cp -r dispatch_event.py build
+cp -r dev_workflow build
 
 # Change to the build directory
 cd build
 
 # Create a ZIP file with the installed dependencies
-find . -type d -name "__pycache__" -prune -o -type f -print | zip -r ../../../../$DISPATCHER_FUNCTION_ZIP_FILENAME -@
+find . -type d -name "__pycache__" -prune -o -type f -print | zip -r ../../../$DISPATCHER_FUNCTION_ZIP_FILENAME -@
 
 # Change back to the project's root
-cd ../../../../infrastructure
+cd ../../../infrastructure
 
 # Upload the ZIP file to S3
 S3_FULL_PATH="$S3_BUCKET/$REPO_NAME/$DISPATCHER_FUNCTION_ZIP_FILENAME"

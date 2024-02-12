@@ -1,20 +1,63 @@
-import os
-
-from troposphere import GetAtt, Ref
 import troposphere.apigateway as apigateway
-import troposphere.awslambda as awslambda
+from troposphere import Ref, GetAtt, Sub
+from troposphere.logs import LogGroup
 
 
-def get_resource():
+class Apis:
+    def __init__(self):
+        self.api_gateway_rest_api = None
+        self.api_gateway_deployment = None
+        self.api_gateway_deployment2 = None
+        self.api_gateway_stage_logs = None
+        self.api_gateway_stage = None
 
-    api_gateway_rest_api = apigateway.RestApi("DevWorkflowApi", Name="DevWorkflowApi")
+    def set_resource(self):
 
-    api_gateway_deployment = apigateway.Deployment("DevWorkflowApiGatewayDeployment",
-                                                   RestApiId=Ref(api_gateway_rest_api),
-                                                   Description="Deployment for PlaylistMonitorApi")
-    api_gateway_stage = apigateway.Stage("DevWorkflowApiGatewayStage",
-                                         StageName="Prod",
-                                         RestApiId=Ref(api_gateway_rest_api),
-                                         DeploymentId=Ref(api_gateway_deployment))
+        self.api_gateway_rest_api = apigateway.RestApi("DevWorkflowApi", Name="DevWorkflowApi")
 
-    return api_gateway_rest_api, api_gateway_deployment, api_gateway_stage
+        self.api_gateway_deployment = apigateway.Deployment(
+            "DevWorkflowApiGatewayDeployment",
+            RestApiId=Ref(self.api_gateway_rest_api),
+            Description="Deployment for the DevWorkflow API",
+            DependsOn=self.api_gateway_rest_api,
+            StageDescription=apigateway.StageDescription(
+                LoggingLevel="INFO",
+                MetricsEnabled=True,
+                DataTraceEnabled=True,
+            ),
+        )
+
+        self.api_gateway_deployment2 = apigateway.Deployment(
+            "DevWorkflowApiGatewayDeployment2",
+            RestApiId=Ref(self.api_gateway_rest_api),
+            Description="Deployment for the DevWorkflow API",
+            DependsOn=self.api_gateway_rest_api,
+        )
+
+        # self.api_gateway_stage_logs = LogGroup(
+        #     "DevWorkflowApiGatewayStageProdLogs",
+        #     LogGroupName=Sub(
+        #         "/aws/api-gateway/${ApiId}/DevWorkflow/Prod",
+        #         ApiId=Ref(self.api_gateway_rest_api)
+        #     ),
+        # )
+
+        self.api_gateway_stage = apigateway.Stage(
+            "DevWorkflowApiGatewayStage",
+            DependsOn=self.api_gateway_deployment,
+            StageName="Prod",
+            RestApiId=Ref(self.api_gateway_rest_api),
+            DeploymentId=Ref(self.api_gateway_deployment2),
+            MethodSettings=[
+                apigateway.MethodSetting(
+                    HttpMethod="*",
+                    ResourcePath="/*",
+                    MetricsEnabled=True,
+                    DataTraceEnabled=True,
+                    LoggingLevel="INFO",
+                )
+            ],
+            # AccessLogSetting=apigateway.AccessLogSetting(
+            #     DestinationArn=GetAtt(self.api_gateway_stage_logs, 'Arn')
+            # )
+        )
