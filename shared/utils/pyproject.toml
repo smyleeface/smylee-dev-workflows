@@ -1,0 +1,7 @@
+[project]
+name = "dev_workflow_utils"
+version = "0.0.1"
+dependencies = []
+
+[tool.setuptools.packages]
+find = {}

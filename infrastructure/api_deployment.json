@@ -1,0 +1,4 @@
+{
+    "stageName": "Prod",
+    "stageDescription": "{\"loggingLevel\": \"INFO\",\"metricsEnabled\": true,\"dataTraceEnabled\": true,\"methodSettings\": {\"/*/*\": {\"loggingLevel\": \"INFO\",\"metricsEnabled\": true,\"dataTraceEnabled\": true,\"httpMethod\": \"*\",\"resourcePath\": \"/*\"}}}"
+}
