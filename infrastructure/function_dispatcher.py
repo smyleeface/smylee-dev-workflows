@@ -56,13 +56,65 @@ class FunctionDispatcher:
             ResourceId=Ref(api_gateway_resource),
             RestApiId=Ref(self._api_gateway_rest_api),
             AuthorizationType="NONE",
+            MethodResponses=[apigateway.MethodResponse(StatusCode="200")],
             Integration=apigateway.Integration(
+                Type="AWS",
                 IntegrationHttpMethod="POST",
-                Type="AWS_PROXY",
                 Uri=Sub(
                     "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FunctionArn}/invocations",
                     FunctionArn=GetAtt(function_definition, "Arn"),
                 ),
+                PassthroughBehavior="WHEN_NO_MATCH",
+                IntegrationResponses=[apigateway.IntegrationResponse(StatusCode="200")],
+                RequestParameters={"integration.request.header.X-Amz-Invocation-Type": "'Event'"},
+                RequestTemplates={
+                    "application/json": """
+##  See https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html
+##  This template will pass through all parameters including path, querystring, header, stage variables, and context through to the integration endpoint via the body/payload
+#set($allParams = $input.params())
+{
+"body" : "$util.escapeJavaScript($input.body).replaceAll("\\'","'")",
+"params" : {
+#foreach($type in $allParams.keySet())
+    #set($params = $allParams.get($type))
+"$type" : {
+    #foreach($paramName in $params.keySet())
+    "$paramName" : "$util.escapeJavaScript($params.get($paramName))"
+        #if($foreach.hasNext),#end
+    #end
+}
+    #if($foreach.hasNext),#end
+#end
+},
+"stage-variables" : {
+#foreach($key in $stageVariables.keySet())
+"$key" : "$util.escapeJavaScript($stageVariables.get($key))"
+    #if($foreach.hasNext),#end
+#end
+},
+"context" : {
+    "account-id" : "$context.identity.accountId",
+    "api-id" : "$context.apiId",
+    "api-key" : "$context.identity.apiKey",
+    "authorizer-principal-id" : "$context.authorizer.principalId",
+    "caller" : "$context.identity.caller",
+    "cognito-authentication-provider" : "$context.identity.cognitoAuthenticationProvider",
+    "cognito-authentication-type" : "$context.identity.cognitoAuthenticationType",
+    "cognito-identity-id" : "$context.identity.cognitoIdentityId",
+    "cognito-identity-pool-id" : "$context.identity.cognitoIdentityPoolId",
+    "http-method" : "$context.httpMethod",
+    "stage" : "$context.stage",
+    "source-ip" : "$context.identity.sourceIp",
+    "user" : "$context.identity.user",
+    "user-agent" : "$context.identity.userAgent",
+    "user-arn" : "$context.identity.userArn",
+    "request-id" : "$context.requestId",
+    "resource-id" : "$context.resourceId",
+    "resource-path" : "$context.resourcePath"
+    }
+}
+                """
+                },
             ),
         )
 
@@ -76,9 +128,6 @@ class FunctionDispatcher:
             api_gateway_resource, function_definition
         )
 
-        # current_template.resources["DevWorkflowApiGatewayDeployment"].resource["DependsOn"] = [
-        #     api_gateway_method.title
-        # ]
         current_template.add_resource(function_role)
         current_template.add_resource(function_definition)
         current_template.add_resource(function_event_invoke_config)

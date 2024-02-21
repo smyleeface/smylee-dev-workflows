@@ -35,9 +35,6 @@ if __name__ == "__main__":
     api_gateway_definitions.set_resource()
     main_template.add_resource(api_gateway_definitions.api_gateway_rest_api)
     main_template.add_resource(api_gateway_definitions.api_gateway_deployment)
-    main_template.add_resource(api_gateway_definitions.api_gateway_deployment2)
-    # main_template.add_resource(api_gateway_definitions.api_gateway_stage_logs)
-    # main_template.add_resource(api_gateway_definitions.api_gateway_stage)
 
     # Dispatcher Function
     dispatcher_function_s3_zip_path_param_name = "DispatcherFunctionS3ZipPath"
