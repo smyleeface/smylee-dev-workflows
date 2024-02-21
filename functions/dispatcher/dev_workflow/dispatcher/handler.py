@@ -28,10 +28,12 @@ gh_webhook_secret = app_parameters["Parameters"][0]["Value"]
 
 
 def lambda_handler(event, context):
+    logger.debug(event)
     payload_string = event.get("body", "{}")
     payload = json.loads(payload_string)
-    headers = event.get("headers", {})
+    headers = (event.get("params", {})).get("header", {})
     logger.debug(payload)
+    logger.debug(payload_string)
     logger.debug(headers)
     signature = headers.get("X-Hub-Signature-256", "")
     payload_validator.verify_signature(payload_string, gh_webhook_secret, signature)
@@ -41,4 +43,9 @@ def lambda_handler(event, context):
     action = payload.get("action", None)
     dispatch(action, github_event_type)
 
-    return {"isBase64Encoded": False, "statusCode": 200, "headers": {}, "body": "valid"}
+    return {
+        "isBase64Encoded": False,
+        "statusCode": 200,
+        "headers": {},
+        "body": "completed",
+    }
