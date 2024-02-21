@@ -1,9 +1,29 @@
 import hashlib
 import hmac
-from http.client import HTTPException
+import logging
+import os
+
+logger = logging.getLogger()
+logger.setLevel(os.environ.get("LOGGING_LEVEL", logging.INFO))
 
 
-def verify_signature(payload_body, secret_token, signature_header):
+class RequestSignatureDoesNotMatchException(Exception):
+    pass
+
+
+class GitHubSignatureHeaderMissingException(Exception):
+    pass
+
+
+class SecretTokenForGitHubSignatureMissingException(Exception):
+    pass
+
+
+class PayloadBodyMissingException(Exception):
+    pass
+
+
+def verify_signature(payload_body: str, secret_token: str, signature_header: str):
     """Verify that the payload was sent from GitHub by validating SHA256.
 
     Raise and return 403 if not authorized.
@@ -14,7 +34,11 @@ def verify_signature(payload_body, secret_token, signature_header):
         signature_header: header received from GitHub (x-hub-signature-256)
     """
     if not signature_header:
-        raise HTTPException(status_code=403, detail="x-hub-signature-256 header is missing!")
+        raise GitHubSignatureHeaderMissingException()
+    if not secret_token:
+        raise SecretTokenForGitHubSignatureMissingException()
+    if not payload_body:
+        raise PayloadBodyMissingException()
     hash_object = hmac.new(
         secret_token.encode("utf-8"),
         msg=payload_body.encode("utf-8"),
@@ -22,4 +46,8 @@ def verify_signature(payload_body, secret_token, signature_header):
     )
     expected_signature = "sha256=" + hash_object.hexdigest()
     if not hmac.compare_digest(expected_signature, signature_header):
-        raise HTTPException(status_code=403, detail="Request signatures didn't match!")
+        logger.debug(f"Expected signature: {expected_signature}")
+        logger.debug(f"Actual signature: {signature_header}")
+        raise RequestSignatureDoesNotMatchException()
+
+    return True
