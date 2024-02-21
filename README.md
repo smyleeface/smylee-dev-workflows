@@ -69,3 +69,9 @@ put the python venv in user path
 ```bash
 export PATH=/Users/Path/To/SmyleeDevWorkflows/.venv/bin/:$PATH
 ```
+
+install packages in editable mode
+```bash
+cd shared/utils
+pip install -e . --config-settings editable_mode=compat
+```
