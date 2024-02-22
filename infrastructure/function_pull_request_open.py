@@ -1,8 +1,9 @@
 from awacs.aws import Action, Allow, PolicyDocument, Principal, Statement
-from troposphere import Sub, Template
-import troposphere.sns as sns
+from troposphere import Sub, Template, GetAtt, Ref
+import troposphere.awslambda as awslambda
 import troposphere.iam as iam
 from troposphere.iam import Policy
+import troposphere.sns as sns
 
 
 class FunctionPullRequestOpen:
@@ -27,10 +28,25 @@ class FunctionPullRequestOpen:
             self._app_name + "Topic", TopicName=self._app_prefix + "-" + self._app_name
         )
 
+    def get_function_definition(self, function_role) -> awslambda.Function:
+        return awslambda.Function(
+            self._app_name,
+            Handler="dev_workflow.pull_request__open.handler.lambda_handler",
+            Role=GetAtt(function_role, "Arn"),
+            FunctionName=self._app_prefix + "-" + self._app_name,
+            Runtime="python3.11",
+            Timeout=60,
+            Code=awslambda.Code(
+                S3Bucket=Ref(self._application_s3_param), S3Key=Ref(self._application_zip_param)
+            ),
+        )
+
     def add_resource(self, current_template: Template) -> Template:
         function_role = self.get_function_role_and_policy()
+        function_definition = self.get_function_definition(function_role)
         sns_topic_resource = self.get_function_sns_topic_resource()
         current_template.add_resource(function_role)
+        current_template.add_resource(function_definition)
         current_template.add_resource(sns_topic_resource)
 
         return current_template
