@@ -23,9 +23,11 @@ class FunctionPullRequestOpen:
         self._app_parameter_store_path = app_parameter_store_path
         self._primary_kms_arn = primary_kms_arn
 
-    def get_function_sns_topic_resource(self) -> sns.Topic:
+    def get_function_sns_topic_resource(self, subscriptions: [sns.Subscription]) -> sns.Topic:
         return sns.Topic(
-            self._app_name + "Topic", TopicName=self._app_prefix + "-" + self._app_name
+            self._app_name + "Topic",
+            TopicName=self._app_prefix + "-" + self._app_name,
+            Subscription=subscriptions,
         )
 
     def get_function_definition(self, function_role) -> awslambda.Function:
@@ -44,7 +46,8 @@ class FunctionPullRequestOpen:
     def add_resource(self, current_template: Template) -> Template:
         function_role = self.get_function_role_and_policy()
         function_definition = self.get_function_definition(function_role)
-        sns_topic_resource = self.get_function_sns_topic_resource()
+        topic_subscription = [self.add_topic_subscription(function_definition)]
+        sns_topic_resource = self.get_function_sns_topic_resource(topic_subscription)
         function_event_invoke_config = self.get_function_event_invoke_config(function_definition)
         awslambda_permission = self.get_lambda_trigger_permissions(
             function_definition, sns_topic_resource
@@ -57,6 +60,9 @@ class FunctionPullRequestOpen:
         current_template.add_resource(awslambda_permission)
 
         return current_template
+
+    def add_topic_subscription(self, lambda_function) -> sns.Subscription:
+        return sns.Subscription(Protocol="lambda", Endpoint=GetAtt(lambda_function, "Arn"))
 
     def get_lambda_trigger_permissions(
         self, function_definition, topic_definition
