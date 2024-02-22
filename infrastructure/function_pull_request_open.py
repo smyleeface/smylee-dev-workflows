@@ -45,11 +45,39 @@ class FunctionPullRequestOpen:
         function_role = self.get_function_role_and_policy()
         function_definition = self.get_function_definition(function_role)
         sns_topic_resource = self.get_function_sns_topic_resource()
+        function_event_invoke_config = self.get_function_event_invoke_config(function_definition)
+        awslambda_permission = self.get_lambda_trigger_permissions(
+            function_definition, sns_topic_resource
+        )
+
         current_template.add_resource(function_role)
         current_template.add_resource(function_definition)
         current_template.add_resource(sns_topic_resource)
+        current_template.add_resource(function_event_invoke_config)
+        current_template.add_resource(awslambda_permission)
 
         return current_template
+
+    def get_lambda_trigger_permissions(
+        self, function_definition, topic_definition
+    ) -> awslambda.Permission:
+        return awslambda.Permission(
+            self._app_name + "ApiGatewayLambdaPermission",
+            Action="lambda:InvokeFunction",
+            FunctionName=Ref(function_definition),
+            Principal="sns.amazonaws.com",
+            SourceArn=Ref(topic_definition),
+        )
+
+    def get_function_event_invoke_config(
+        self, function_definition: awslambda.Function
+    ) -> awslambda.EventInvokeConfig:
+        return awslambda.EventInvokeConfig(
+            self._app_name + "EventInvokeConfig",
+            FunctionName=Ref(function_definition),
+            MaximumRetryAttempts=0,
+            Qualifier="$LATEST",
+        )
 
     def get_function_role_and_policy(self) -> iam.Role:
         allow_write_to_log_statement = Statement(
