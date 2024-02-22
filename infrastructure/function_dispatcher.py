@@ -171,6 +171,14 @@ class FunctionDispatcher:
             Resource=["*"],
         )
 
+        allow_publish_to_topic = Statement(
+            Effect=Allow,
+            Action=[
+                Action("sns", "Publish"),
+            ],
+            Resource=[Sub("arn:aws:sns:${AWS::Region}:${AWS::AccountId}:DevWorkflow-*")],
+        )
+
         allow_get_parameter_statement = Statement(
             Effect=Allow,
             Action=[
