@@ -3,6 +3,7 @@ import sys
 
 from troposphere import ImportValue, Parameter, Template, Ref
 import troposphere.awslambda as awslambda
+import troposphere.s3 as s3
 
 from api_gateway import apis
 from function_dispatcher import FunctionDispatcher
@@ -15,6 +16,7 @@ if __name__ == "__main__":
     main_template = Template()
 
     application_prefix = "DevWorkflow"
+    application_prefix_lowercase = application_prefix.lower()
     app_parameter_store_path = "/SmyleeDevWorkflows"
 
     # parameters
@@ -30,6 +32,13 @@ if __name__ == "__main__":
     s3_bucket_for_artifacts_param_name = "BucketForUploadsUsWest2"
     s3_buckets_for_artifacts_import = ImportValue("S3::BucketForUploadsUsWest2-Name")
     s3_bucket_for_artifacts = Parameter(s3_bucket_for_artifacts_param_name, Type="String")
+
+    # s3 bucket for uploading payload requests
+    s3_bucket_for_payloads = s3.Bucket(
+        application_prefix + "PayloadStorage",
+        BucketName=application_prefix_lowercase + "-payload-storage"
+    )
+    main_template.add_resource(s3_bucket_for_payloads)
 
     # Base API Gateway
     api_gateway_definitions = apis.Apis()
