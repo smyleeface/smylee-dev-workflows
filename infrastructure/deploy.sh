@@ -12,8 +12,13 @@ BUILD_MANIFEST=$(cat $BUILD_DATA_PATH/build_manifest)
 SHA=$(git rev-parse --short $(git rev-parse HEAD))
 REPO_NAME=$(basename $(git rev-parse --show-toplevel))
 S3_BUCKET=$(aws cloudformation list-exports --query "Exports[?Name=='S3::BucketForUploadsUsWest2-Name'].Value" --output text)
+
 DISPATCHER_FUNCTION_ZIP_FILENAME=$(echo ${BUILD_MANIFEST} | jq -r '.dispatcher_application')
 DISPATCHER_FUNCTION_S3_ZIP_PATH="${REPO_NAME}/${DISPATCHER_FUNCTION_ZIP_FILENAME}"
+
+PR_OPEN_FUNCTION_ZIP_FILENAME=$(echo ${BUILD_MANIFEST} | jq -r '.pull_request__open_application')
+PR_OPEN_FUNCTION_S3_ZIP_PATH="${REPO_NAME}/${PR_OPEN_FUNCTION_ZIP_FILENAME}"
+
 TEMPLATE_FILE="$BUILD_DATA_PATH/cloudformation.yaml"
 
 # create cloudformation.yaml
@@ -24,6 +29,7 @@ aws cloudformation deploy \
   --template-file $TEMPLATE_FILE \
   --capabilities CAPABILITY_NAMED_IAM \
   --parameter-overrides DispatcherFunctionS3ZipPath=$DISPATCHER_FUNCTION_S3_ZIP_PATH \
+                        PullRequestOpenS3ZipPath=$PR_OPEN_FUNCTION_S3_ZIP_PATH \
                         BucketForUploadsUsWest2=$S3_BUCKET
 
 aws apigateway create-deployment --rest-api-id 6ofqx2gwr5 --description "Deployed from CLI - ${BUILD_ID}" --cli-input-json file://api_deployment.json
