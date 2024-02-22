@@ -1,7 +1,8 @@
 import os
 import sys
 
-from troposphere import ImportValue, Parameter, Template
+from troposphere import ImportValue, Parameter, Template, Ref
+import troposphere.awslambda as awslambda
 
 from api_gateway import apis
 from function_dispatcher import FunctionDispatcher
@@ -64,6 +65,13 @@ if __name__ == "__main__":
         primary_kms_arn,
     )
     main_template = pull_request_open_function.add_resource(main_template)
+    main_template.resources['FunctionDispatcher'].resource['Properties']['Environment'] = (
+        awslambda.Environment(
+            Variables={
+                "PR__OPEN_SNS_TOPIC_ARN": Ref(main_template.resources.get('FunctionPROpenTopic'))
+            }
+        )
+    )
 
     # add parameters to template
     main_template.add_parameter(s3_bucket_for_artifacts)

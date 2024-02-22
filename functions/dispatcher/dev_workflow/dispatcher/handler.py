@@ -26,6 +26,8 @@ except ClientError as e:
 
 gh_webhook_secret = app_parameters["Parameters"][0]["Value"]
 
+sns_client = boto3_session.client(service_name="sns", region_name="us-west-2")
+
 
 def lambda_handler(event, context):
     logger.debug(event)
@@ -41,7 +43,7 @@ def lambda_handler(event, context):
 
     github_event_type = headers.get("X-GitHub-Event", "")
     action = payload.get("action", None)
-    dispatch(action, github_event_type)
+    dispatch(sns_client, action, github_event_type, payload)
 
     return {
         "isBase64Encoded": False,
