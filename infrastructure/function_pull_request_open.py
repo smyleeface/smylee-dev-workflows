@@ -19,5 +19,13 @@ class FunctionPullRequestOpen:
         self._app_parameter_store_path = app_parameter_store_path
         self._primary_kms_arn = primary_kms_arn
 
+    def get_function_sns_topic_resource(self) -> sns.Topic:
+        return sns.Topic(
+            self._app_name + "Topic", TopicName=self._app_prefix + "-" + self._app_name
+        )
+
     def add_resource(self, current_template: Template) -> Template:
+        sns_topic_resource = self.get_function_sns_topic_resource()
+        current_template.add_resource(sns_topic_resource)
+
         return current_template
