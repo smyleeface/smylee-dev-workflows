@@ -15,6 +15,7 @@ class FunctionPullRequestOpen:
         application_zip_param,
         app_parameter_store_path,
         primary_kms_arn,
+        s3_bucket_for_payloads
     ):
         self._app_name = "FunctionPROpen"
         self._app_prefix = app_prefix
@@ -22,6 +23,7 @@ class FunctionPullRequestOpen:
         self._application_zip_param = application_zip_param
         self._app_parameter_store_path = app_parameter_store_path
         self._primary_kms_arn = primary_kms_arn
+        self._s3_bucket_for_payloads = s3_bucket_for_payloads
 
     def get_function_sns_topic_resource(self, subscriptions: [sns.Subscription]) -> sns.Topic:
         return sns.Topic(
@@ -41,6 +43,9 @@ class FunctionPullRequestOpen:
             Code=awslambda.Code(
                 S3Bucket=Ref(self._application_s3_param), S3Key=Ref(self._application_zip_param)
             ),
+            Environment=awslambda.Environment(
+                Variables={"S3_BUCKET_FOR_PAYLOADS": Ref(self._s3_bucket_for_payloads)}
+            )
         )
 
     def add_resource(self, current_template: Template) -> Template:
@@ -117,6 +122,18 @@ class FunctionPullRequestOpen:
             Resource=[self._primary_kms_arn],
         )
 
+        allow_write_to_s3_bucket = Statement(
+            Effect=Allow,
+            Action=[
+                Action("s3", "GetObject"),
+                Action("s3", "ListAllMyBuckets"),
+            ],
+            Resource=[
+                f"arn:aws:s3:::{self._s3_bucket_for_payloads.resource['Properties']['BucketName']}/*",
+                f"arn:aws:s3:::{self._s3_bucket_for_payloads.resource['Properties']['BucketName']}",
+            ],
+        )
+
         policy_document = PolicyDocument(
             Version="2012-10-17",
             Id="LambdaExecutionPolicy",
@@ -124,6 +141,7 @@ class FunctionPullRequestOpen:
                 allow_write_to_log_statement,
                 allow_get_parameter_statement,
                 allow_kms_decrypt,
+                allow_write_to_s3_bucket
             ],
         )
 

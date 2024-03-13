@@ -73,6 +73,7 @@ if __name__ == "__main__":
         pull_request_open_s3_zip_path_param_name,
         '/SmyleeDevWorkflows',
         primary_kms_arn,
+        s3_bucket_for_payloads
     )
     main_template = pull_request_open_function.add_resource(main_template)
     main_template.resources['FunctionDispatcher'].resource['Properties']['Environment'].resource['Variables']['PR__OPEN_SNS_TOPIC_ARN'] = Ref(main_template.resources.get('FunctionPROpenTopic'))
