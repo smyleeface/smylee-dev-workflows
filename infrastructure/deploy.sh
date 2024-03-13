@@ -4,6 +4,7 @@ set -e
 
 source ../secrets/env_var
 
+RANDO_HASH="n567md2s" # for naming things uniquely
 REPO_ROOT=$(git rev-parse --show-toplevel)
 BUILD_DATA_PATH=${REPO_ROOT}/infrastructure/build_data
 BUILD_ARTIFACTS=${REPO_ROOT}/infrastructure/build_artifacts
@@ -12,7 +13,6 @@ BUILD_MANIFEST=$(cat $BUILD_DATA_PATH/build_manifest)
 SHA=$(git rev-parse --short $(git rev-parse HEAD))
 REPO_NAME=$(basename $(git rev-parse --show-toplevel))
 S3_BUCKET=$(aws cloudformation list-exports --query "Exports[?Name=='S3::BucketForUploadsUsWest2-Name'].Value" --output text)
-
 DISPATCHER_FUNCTION_ZIP_FILENAME=$(echo ${BUILD_MANIFEST} | jq -r '.dispatcher_application')
 DISPATCHER_FUNCTION_S3_ZIP_PATH="${REPO_NAME}/${DISPATCHER_FUNCTION_ZIP_FILENAME}"
 
@@ -22,7 +22,7 @@ PR_OPEN_FUNCTION_S3_ZIP_PATH="${REPO_NAME}/${PR_OPEN_FUNCTION_ZIP_FILENAME}"
 TEMPLATE_FILE="$BUILD_DATA_PATH/cloudformation.yaml"
 
 # create cloudformation.yaml
-python main.py $TEMPLATE_FILE
+python main.py $TEMPLATE_FILE $RANDO_HASH
 
 aws cloudformation deploy \
   --stack-name SmyleeDevWorkflows \

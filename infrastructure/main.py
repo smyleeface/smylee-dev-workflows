@@ -2,7 +2,6 @@ import os
 import sys
 
 from troposphere import ImportValue, Parameter, Template, Ref
-import troposphere.awslambda as awslambda
 import troposphere.s3 as s3
 
 from api_gateway import apis
@@ -12,6 +11,7 @@ from function_pull_request_open import FunctionPullRequestOpen
 
 if __name__ == "__main__":
     template_file = sys.argv[1]
+    rando_hash = sys.argv[2]
 
     main_template = Template()
 
@@ -36,7 +36,7 @@ if __name__ == "__main__":
     # s3 bucket for uploading payload requests
     s3_bucket_for_payloads = s3.Bucket(
         application_prefix + "PayloadStorage",
-        BucketName=application_prefix_lowercase + "-payload-storage"
+        BucketName=application_prefix_lowercase + "-payload-storage-" + rando_hash
     )
     main_template.add_resource(s3_bucket_for_payloads)
 
@@ -58,6 +58,7 @@ if __name__ == "__main__":
         api_gateway_definitions.api_gateway_rest_api,
         app_parameter_store_path,
         primary_kms_arn,
+        s3_bucket_for_payloads
     )
     main_template = dispatcher_function.add_resource(main_template)
 
@@ -74,13 +75,7 @@ if __name__ == "__main__":
         primary_kms_arn,
     )
     main_template = pull_request_open_function.add_resource(main_template)
-    main_template.resources['FunctionDispatcher'].resource['Properties']['Environment'] = (
-        awslambda.Environment(
-            Variables={
-                "PR__OPEN_SNS_TOPIC_ARN": Ref(main_template.resources.get('FunctionPROpenTopic'))
-            }
-        )
-    )
+    main_template.resources['FunctionDispatcher'].resource['Properties']['Environment'].resource['Variables']['PR__OPEN_SNS_TOPIC_ARN'] = Ref(main_template.resources.get('FunctionPROpenTopic'))
 
     # add parameters to template
     main_template.add_parameter(s3_bucket_for_artifacts)
