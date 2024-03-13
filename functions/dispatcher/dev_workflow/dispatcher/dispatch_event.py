@@ -1,13 +1,12 @@
-from .pr__open import (message as pr__open_message,
-                       sns_topic_arn as pr__open_sns_topic_arn)
+import os
 
 
-def dispatch(sns_client, action, github_event_type, payload):
+def dispatch(sns_client, action, github_event_type, message):
 
     if github_event_type == "pull_request" and action in ["opened", "reopened"]:
         print("pull request opened")
-        message = pr__open_message(payload)
+        sns_topic_arn = os.environ.get("PR__OPEN_SNS_TOPIC_ARN", "")
         sns_client.publish(
-            TopicArn=pr__open_sns_topic_arn,
+            TopicArn=sns_topic_arn,
             Message=message,
         )
