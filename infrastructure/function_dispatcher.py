@@ -16,6 +16,7 @@ class FunctionDispatcher:
         api_gateway_rest_api,
         app_parameter_store_path,
         primary_kms_arn,
+        s3_bucket_for_payloads
     ):
         self._app_name = "FunctionDispatcher"
         self._api_path_part = "github-dispatcher"
@@ -25,6 +26,7 @@ class FunctionDispatcher:
         self._api_gateway_rest_api = api_gateway_rest_api
         self._app_parameter_store_path = app_parameter_store_path
         self._primary_kms_arn = primary_kms_arn
+        self._s3_bucket_for_payloads = s3_bucket_for_payloads
 
     def get_function_definition(self, function_role) -> awslambda.Function:
         return awslambda.Function(
@@ -37,6 +39,9 @@ class FunctionDispatcher:
             Code=awslambda.Code(
                 S3Bucket=Ref(self._application_s3_param), S3Key=Ref(self._application_zip_param)
             ),
+            Environment=awslambda.Environment(
+                Variables={"S3_BUCKET_FOR_PAYLOADS": Ref(self._s3_bucket_for_payloads)}
+            )
         )
 
     def get_function_api_gateway_resource(self) -> apigateway.Resource:
@@ -171,6 +176,26 @@ class FunctionDispatcher:
             Resource=["*"],
         )
 
+        allow_publish_to_topic = Statement(
+            Effect=Allow,
+            Action=[
+                Action("sns", "Publish"),
+            ],
+            Resource=[Sub("arn:aws:sns:${AWS::Region}:${AWS::AccountId}:DevWorkflow-*")],
+        )
+
+        allow_write_to_s3_bucket = Statement(
+            Effect=Allow,
+            Action=[
+                Action("s3", "PutObject"),
+                Action("s3", "ListAllMyBuckets"),
+            ],
+            Resource=[
+                f"arn:aws:s3:::{self._s3_bucket_for_payloads.resource['Properties']['BucketName']}/*",
+                f"arn:aws:s3:::{self._s3_bucket_for_payloads.resource['Properties']['BucketName']}",
+            ],
+        )
+
         allow_get_parameter_statement = Statement(
             Effect=Allow,
             Action=[
@@ -199,6 +224,8 @@ class FunctionDispatcher:
                 allow_write_to_log_statement,
                 allow_get_parameter_statement,
                 allow_kms_decrypt,
+                allow_publish_to_topic,
+                allow_write_to_s3_bucket
             ],
         )
 

@@ -4,47 +4,62 @@ set -e
 
 source ../secrets/env_var
 
+echo "$1"
+
+
 REPO_ROOT=$(git rev-parse --show-toplevel)
 BUILD_DATA_PATH=${REPO_ROOT}/infrastructure/build_data
-BUILD_ARTIFACTS=${REPO_ROOT}/infrastructure/build_artifacts
+BUILD_ARTIFACTS_PATH=${REPO_ROOT}/infrastructure/build_artifacts
 UUID=$(uuidgen)
 BUILD_ID=${UUID##*-}
 SHA=$(git rev-parse --short $(git rev-parse HEAD))
 REPO_NAME=$(basename $(git rev-parse --show-toplevel))
 S3_BUCKET=$(aws cloudformation list-exports --query "Exports[?Name=='S3::BucketForUploadsUsWest2-Name'].Value" --output text)
-DISPATCHER_FUNCTION_ZIP_FILENAME="dispatcher_application-${SHA}-${BUILD_ID}.zip"
-
 echo "############ BUILD_ID: ${BUILD_ID}"
-echo "############ DISPATCHER_FUNCTION_ZIP_FILENAME: ${DISPATCHER_FUNCTION_ZIP_FILENAME}"
 
-# Ensure the build directory exists
-mkdir -p build_artifacts/dispatcher
+BUILD_MANIFEST=""
 
-cd ${REPO_ROOT}/functions/dispatcher/
+# Directory containing the directories you want to loop through
+path_to_functions=${REPO_ROOT}/functions
 
-# Install the Python dependencies from requirements.txt into the build directory
-pip install --platform manylinux2014_x86_64 --only-binary=:all: --target ${BUILD_ARTIFACTS}/dispatcher -r requirements.txt
+# Check if the target directory exists
+if [ -d "${path_to_functions}" ]; then
+    # Loop through directories in the target directory
+    for dir in "${path_to_functions}"/*/; do
+        # Extract directory name from the path
+        dir_name="${dir%/}"
+        dir_name="${dir_name##*/}"
+        function_name=${dir_name}
 
-## Copy application code to directory
-cp -r dev_workflow ${BUILD_ARTIFACTS}/dispatcher
+        # Ensure the build directory exists
+        mkdir -p ${BUILD_ARTIFACTS_PATH}/${function_name}
 
-## Change to the build directory
-cd ${BUILD_ARTIFACTS}/dispatcher
+        # Install the Python dependencies from requirements.txt into the build directory
+        cd ${REPO_ROOT}/functions/${function_name}
+        pip install --platform manylinux2014_x86_64 --only-binary=:all: --target ${BUILD_ARTIFACTS_PATH}/${function_name} -r requirements.txt
 
-## Create a ZIP file with the installed dependencies
-find . -type d -name "__pycache__" -prune -o -type f -print | zip -r ${BUILD_ARTIFACTS}/${DISPATCHER_FUNCTION_ZIP_FILENAME} -@
-#
-## Change back to the project's root
-cd ${REPO_ROOT}
-#
-## Upload the ZIP file to S3
-S3_FULL_PATH="$S3_BUCKET/$REPO_NAME/${DISPATCHER_FUNCTION_ZIP_FILENAME}"
-echo "############ Uploading ${DISPATCHER_FUNCTION_ZIP_FILENAME} to s3://$S3_FULL_PATH"
-aws s3 cp ${BUILD_ARTIFACTS}/${DISPATCHER_FUNCTION_ZIP_FILENAME} s3://$S3_FULL_PATH
+        # Copy application code to directory
+        cp -r dev_workflow ${BUILD_ARTIFACTS_PATH}/${function_name}
+
+        # Change to the build directory
+        cd ${BUILD_ARTIFACTS_PATH}/${function_name}
+
+        # Create a ZIP file with the installed dependencies
+        FUNCTION_ZIP_FILENAME="${function_name}_application-${SHA}-${BUILD_ID}.zip"
+        echo "############ FUNCTION_ZIP_FILENAME: ${FUNCTION_ZIP_FILENAME}"
+        find . -type d -name "__pycache__" -prune -o -type f -print | zip -r ${BUILD_ARTIFACTS_PATH}/${FUNCTION_ZIP_FILENAME} -@
+
+        # Upload the ZIP file to S3
+        S3_FULL_PATH="$S3_BUCKET/$REPO_NAME/${FUNCTION_ZIP_FILENAME}"
+        echo "############ Uploading ${FUNCTION_ZIP_FILENAME} to s3://$S3_FULL_PATH"
+        aws s3 cp ${BUILD_ARTIFACTS_PATH}/${FUNCTION_ZIP_FILENAME} s3://$S3_FULL_PATH
+
+        BUILD_MANIFEST="${BUILD_MANIFEST}\"${function_name}_application\": \"${FUNCTION_ZIP_FILENAME}\","
+    done
+else
+    echo "Target directory does not exist: ${path_to_functions}"
+fi
 
 echo ${BUILD_ID} > ${BUILD_DATA_PATH}/build_id
-BUILD_ARTIFACTS="{ \"dispatcher_application\": \"${DISPATCHER_FUNCTION_ZIP_FILENAME}\" }"
-echo ${BUILD_ARTIFACTS} | jq > ${BUILD_DATA_PATH}/build_manifest
-
-# # Clean up the build directory if needed
-# rm -r ../smylee_dev_workflows/functions/pull_request__open/build
+BUILD_MANIFEST="{$(echo "${BUILD_MANIFEST}" | sed 's/.$//')}"
+echo ${BUILD_MANIFEST} | jq > ${BUILD_DATA_PATH}/build_manifest

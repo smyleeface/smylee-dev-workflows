@@ -4,6 +4,7 @@ set -e
 
 source ../secrets/env_var
 
+RANDO_HASH="n567md2s" # for naming things uniquely
 REPO_ROOT=$(git rev-parse --show-toplevel)
 BUILD_DATA_PATH=${REPO_ROOT}/infrastructure/build_data
 BUILD_ARTIFACTS=${REPO_ROOT}/infrastructure/build_artifacts
@@ -14,16 +15,21 @@ REPO_NAME=$(basename $(git rev-parse --show-toplevel))
 S3_BUCKET=$(aws cloudformation list-exports --query "Exports[?Name=='S3::BucketForUploadsUsWest2-Name'].Value" --output text)
 DISPATCHER_FUNCTION_ZIP_FILENAME=$(echo ${BUILD_MANIFEST} | jq -r '.dispatcher_application')
 DISPATCHER_FUNCTION_S3_ZIP_PATH="${REPO_NAME}/${DISPATCHER_FUNCTION_ZIP_FILENAME}"
+
+PR_OPEN_FUNCTION_ZIP_FILENAME=$(echo ${BUILD_MANIFEST} | jq -r '.pull_request__open_application')
+PR_OPEN_FUNCTION_S3_ZIP_PATH="${REPO_NAME}/${PR_OPEN_FUNCTION_ZIP_FILENAME}"
+
 TEMPLATE_FILE="$BUILD_DATA_PATH/cloudformation.yaml"
 
 # create cloudformation.yaml
-python main.py $TEMPLATE_FILE
+python main.py $TEMPLATE_FILE $RANDO_HASH
 
 aws cloudformation deploy \
   --stack-name SmyleeDevWorkflows \
   --template-file $TEMPLATE_FILE \
   --capabilities CAPABILITY_NAMED_IAM \
   --parameter-overrides DispatcherFunctionS3ZipPath=$DISPATCHER_FUNCTION_S3_ZIP_PATH \
+                        PullRequestOpenS3ZipPath=$PR_OPEN_FUNCTION_S3_ZIP_PATH \
                         BucketForUploadsUsWest2=$S3_BUCKET
 
 aws apigateway create-deployment --rest-api-id 6ofqx2gwr5 --description "Deployed from CLI - ${BUILD_ID}" --cli-input-json file://api_deployment.json
