@@ -134,6 +134,14 @@ class FunctionPullRequestOpen:
             ],
         )
 
+        allow_bedrock_access = Statement(
+            Effect=Allow,
+            Action=[
+                Action("bedrock", "InvokeModel")
+            ],
+            Resource=["arn:aws:bedrock:us-west-2::foundation-model/mistral.mistral-7b-instruct-v0:2"],
+        )
+
         policy_document = PolicyDocument(
             Version="2012-10-17",
             Id="LambdaExecutionPolicy",
@@ -141,7 +149,8 @@ class FunctionPullRequestOpen:
                 allow_write_to_log_statement,
                 allow_get_parameter_statement,
                 allow_kms_decrypt,
-                allow_write_to_s3_bucket
+                allow_write_to_s3_bucket,
+                allow_bedrock_access
             ],
         )
 
