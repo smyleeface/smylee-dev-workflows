@@ -82,5 +82,7 @@ def lambda_handler(event, context):
 
     body_contents = json.loads(json.loads(json.dumps(bedrock_response.get('body').read().decode('utf-8'))))
     logger.debug(body_contents)
+    pull_request_summary = body_contents.get('outputs', [])[0].get('text', '')
+    pull_request.edit(body=pull_request_summary)
 
     return "done"
