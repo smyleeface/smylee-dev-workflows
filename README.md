@@ -3,7 +3,7 @@ Smylee Dev Workflows
 
 Use with a GitHub and Slack App to process events and notifications.
 
-![Workflow](images/Main.png)
+<img src="diagram.png" width="500" alt="Diagram"/>
 
 Prerequisites
 =============
