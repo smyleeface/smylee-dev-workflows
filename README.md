@@ -5,6 +5,8 @@ Use with a GitHub and Slack App to process events and notifications.
 
 <img src="diagram.png" width="500" alt="Diagram"/>
 
+
+
 Prerequisites
 =============
 
