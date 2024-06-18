@@ -1,0 +1,9 @@
+[project]
+name = "dev_workflow_pull_request__merged"
+version = "0.0.1"
+dependencies = [
+    "boto3==1.28.42"
+]
+
+[tool.setuptools.packages]
+find = {}
