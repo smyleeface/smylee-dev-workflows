@@ -18,6 +18,8 @@ DISPATCHER_FUNCTION_S3_ZIP_PATH="${REPO_NAME}/${DISPATCHER_FUNCTION_ZIP_FILENAME
 
 PR_OPEN_FUNCTION_ZIP_FILENAME=$(echo ${BUILD_MANIFEST} | jq -r '.pull_request__open_application')
 PR_OPEN_FUNCTION_S3_ZIP_PATH="${REPO_NAME}/${PR_OPEN_FUNCTION_ZIP_FILENAME}"
+PR_MERGED_FUNCTION_ZIP_FILENAME=$(echo ${BUILD_MANIFEST} | jq -r '.pull_request__merged_application')
+PR_MERGED_FUNCTION_S3_ZIP_PATH="${REPO_NAME}/${PR_MERGED_FUNCTION_ZIP_FILENAME}"
 
 TEMPLATE_FILE="$BUILD_DATA_PATH/cloudformation.yaml"
 
@@ -30,6 +32,7 @@ aws cloudformation deploy \
   --capabilities CAPABILITY_NAMED_IAM \
   --parameter-overrides DispatcherFunctionS3ZipPath=$DISPATCHER_FUNCTION_S3_ZIP_PATH \
                         PullRequestOpenS3ZipPath=$PR_OPEN_FUNCTION_S3_ZIP_PATH \
+                        PullRequestMergedS3ZipPath=$PR_MERGED_FUNCTION_S3_ZIP_PATH \
                         BucketForUploadsUsWest2=$S3_BUCKET
 
 aws apigateway create-deployment --rest-api-id 6ofqx2gwr5 --description "Deployed from CLI - ${BUILD_ID}" --cli-input-json file://api_deployment.json

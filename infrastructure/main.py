@@ -7,6 +7,7 @@ import troposphere.s3 as s3
 from api_gateway import apis
 from function_dispatcher import FunctionDispatcher
 from function_pull_request_open import FunctionPullRequestOpen
+from function_pull_request_merged import FunctionPullRequestMerged
 
 
 if __name__ == "__main__":
@@ -78,10 +79,27 @@ if __name__ == "__main__":
     main_template = pull_request_open_function.add_resource(main_template)
     main_template.resources['FunctionDispatcher'].resource['Properties']['Environment'].resource['Variables']['PR__OPEN_SNS_TOPIC_ARN'] = Ref(main_template.resources.get('FunctionPROpenTopic'))
 
+    # Pull Request Merged Function
+    pull_request_merged_s3_zip_path_param_name = "PullRequestMergedS3ZipPath"
+    pull_request_merged_s3_zip_path = Parameter(
+        pull_request_merged_s3_zip_path_param_name, Type="String"
+    )
+    pull_request_merged_function = FunctionPullRequestMerged(
+        application_prefix,
+        s3_bucket_for_artifacts_param_name,
+        pull_request_merged_s3_zip_path_param_name,
+        '/SmyleeDevWorkflows',
+        primary_kms_arn,
+        s3_bucket_for_payloads
+    )
+    main_template = pull_request_merged_function.add_resource(main_template)
+    main_template.resources['FunctionDispatcher'].resource['Properties']['Environment'].resource['Variables']['PR__MERGED_SNS_TOPIC_ARN'] = Ref(main_template.resources.get('FunctionPRMergedTopic'))
+
     # add parameters to template
     main_template.add_parameter(s3_bucket_for_artifacts)
     main_template.add_parameter(dispatcher_function_s3_zip_path)
     main_template.add_parameter(pull_request_open_s3_zip_path)
+    main_template.add_parameter(pull_request_merged_s3_zip_path)
 
     with open(os.path.join(os.path.dirname(__file__), template_file), "w") as cf_file:
         cf_file.write(main_template.to_yaml())
