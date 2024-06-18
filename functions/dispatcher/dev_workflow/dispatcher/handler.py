@@ -58,7 +58,7 @@ def lambda_handler(event, context):
         "key": payload_filename
     }
 
-    dispatch(sns_client, action, github_event_type, json.dumps(dispatch_message))
+    dispatch(sns_client, payload, github_event_type, json.dumps(dispatch_message))
 
     return {
         "isBase64Encoded": False,
