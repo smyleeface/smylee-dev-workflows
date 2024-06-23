@@ -1,7 +1,7 @@
 import os
 import sys
 
-from troposphere import ImportValue, Parameter, Template, Ref
+from troposphere import ImportValue, Parameter, Template, Ref, Output, Export
 import troposphere.s3 as s3
 
 from api_gateway import apis
@@ -40,6 +40,12 @@ if __name__ == "__main__":
         BucketName=application_prefix_lowercase + "-payload-storage-" + rando_hash
     )
     main_template.add_resource(s3_bucket_for_payloads)
+    main_template.add_output(Output(
+        application_prefix + "S3DataBucket",
+        Export=Export(f"S3::{application_prefix}-S3DataBucketName"),
+        Description="Bucket for storing data for the dev workflow application",
+        Value=Ref(s3_bucket_for_payloads)
+    ))
 
     # Base API Gateway
     api_gateway_definitions = apis.Apis()
