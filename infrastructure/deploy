@@ -36,3 +36,6 @@ aws cloudformation deploy \
                         BucketForUploadsUsWest2=$S3_BUCKET
 
 aws apigateway create-deployment --rest-api-id 6ofqx2gwr5 --description "Deployed from CLI - ${BUILD_ID}" --cli-input-json file://api_deployment.json
+
+# User access
+aws s3 cp user_access.txt s3://${S3_BUCKET}/user_access.txt
