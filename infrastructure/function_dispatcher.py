@@ -35,7 +35,7 @@ class FunctionDispatcher:
             Role=GetAtt(function_role, "Arn"),
             FunctionName=self._app_prefix + "-" + self._app_name,
             Runtime="python3.11",
-            Timeout=60,
+            Timeout=120,
             Code=awslambda.Code(
                 S3Bucket=Ref(self._application_s3_param), S3Key=Ref(self._application_zip_param)
             ),
@@ -188,6 +188,7 @@ class FunctionDispatcher:
             Effect=Allow,
             Action=[
                 Action("s3", "PutObject"),
+                Action("s3", "GetObject*"),
                 Action("s3", "ListAllMyBuckets"),
             ],
             Resource=[

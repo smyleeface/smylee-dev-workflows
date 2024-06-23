@@ -14,9 +14,7 @@ logger = logging.getLogger()
 logger.setLevel(os.environ.get("LOGGING_LEVEL", logging.INFO))
 
 client = boto3.client("lambda")
-
 boto3_session = boto3.session.Session()
-
 ssm_client = boto3_session.client(service_name="ssm", region_name="us-west-2")
 
 try:
@@ -42,7 +40,10 @@ def lambda_handler(event, context):
     logger.debug(payload_string)
 
     # Verify the user is in the list
-    user_access_ok = verify_user(payload.get("sender", {}).get("login", ""))
+    user_access_ok = verify_user(payload.get("sender", {}).get("login", ""),
+                                 s3_client,
+                                 payload_upload_bucket,
+                                 "user_access.txt")
     if not user_access_ok:
         return {
             "isBase64Encoded": False,
