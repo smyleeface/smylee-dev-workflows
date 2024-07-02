@@ -1,0 +1,2 @@
+../../shared/utils
+boto3==1.28.42
