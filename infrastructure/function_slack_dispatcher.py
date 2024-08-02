@@ -2,7 +2,7 @@ import troposphere.apigateway as apigateway
 import troposphere.awslambda as awslambda
 import troposphere.iam as iam
 from awacs.aws import Action, Allow, PolicyDocument, Principal, Statement
-from troposphere import GetAtt, Ref, Sub, Template
+from troposphere import GetAtt, Ref, Sub, Template, ImportValue
 from troposphere.iam import Policy
 
 
@@ -16,7 +16,8 @@ class FunctionSlackDispatcher:
             api_gateway_rest_api,
             app_parameter_store_path,
             primary_kms_arn,
-            s3_bucket_for_payloads
+            s3_bucket_for_payloads,
+            image_generator_topic_arn_name
     ):
         self._app_name = "FunctionSlackDispatcher"
         self._api_path_part_base = "slack"
@@ -28,6 +29,7 @@ class FunctionSlackDispatcher:
         self._app_parameter_store_path = app_parameter_store_path
         self._primary_kms_arn = primary_kms_arn
         self._s3_bucket_for_payloads = s3_bucket_for_payloads
+        self._image_generator_topic_arn_name = image_generator_topic_arn_name
 
     def get_function_definition(self, function_role) -> awslambda.Function:
         return awslambda.Function(
@@ -41,7 +43,10 @@ class FunctionSlackDispatcher:
                 S3Bucket=Ref(self._application_s3_param), S3Key=Ref(self._application_zip_param)
             ),
             Environment=awslambda.Environment(
-                Variables={"S3_BUCKET_FOR_PAYLOADS": Ref(self._s3_bucket_for_payloads)}
+                Variables={
+                    "S3_BUCKET_FOR_PAYLOADS": Ref(self._s3_bucket_for_payloads),
+                    "IMAGE_GENERATOR_TOPIC_ARN": ImportValue(Ref(self._image_generator_topic_arn_name))
+                }
             )
         )
 
