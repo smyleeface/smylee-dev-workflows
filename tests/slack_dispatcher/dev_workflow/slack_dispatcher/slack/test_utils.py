@@ -16,11 +16,11 @@ class TestSlackDispatcher(unittest.TestCase):
             "user_id": "U12345",
             "user_name": "cool user name",
             "command": "/cool-command",
-            "text": "hello --world=foobar --baz= --bat=123",
+            "text": "hello --world foo bar --baz --bat 123",
             "api_app_id": "A12345",
             "is_enterprise_install": "false",
             "response_url": "https://foobar",
-            "trigger_id": "1.2.3"
+            "trigger_id": "1.2.3",
         }
         self.slack_payload_as_querystring = urllib.parse.urlencode(self.slack_payload)
 
@@ -32,8 +32,5 @@ class TestSlackDispatcher(unittest.TestCase):
         self.assertEqual(slack_utils.get_action(self.slack_payload), "hello")
 
     def test_get_command_arguments(self):
-        args, missing = slack_utils.get_command_arguments(self.slack_payload.get("text"))
-        self.assertEqual(args, {"bat": 123, "world": "foobar"})
-        self.assertEqual(missing, ["baz"])
-
-
+        args = slack_utils.get_command_arguments(self.slack_payload.get("text"))
+        self.assertEqual(args, {"bat": 123, "baz": True, "world": "foo bar"})

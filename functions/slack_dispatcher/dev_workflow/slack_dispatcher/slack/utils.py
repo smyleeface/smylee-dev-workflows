@@ -3,6 +3,7 @@
 import json
 import logging
 import os
+import shlex
 import urllib.parse
 
 import requests
@@ -38,20 +39,32 @@ def post_message(url: str, data: dict) -> int:
         exit(1)
 
 
-def get_command_arguments(command_text: str) -> tuple:
+def get_command_arguments(command_text: str) -> dict:
     """Get the command arguments from the users input"""
-    split_args = command_text.split("--")[1:]
+    parts = shlex.split(command_text)
     result_dict = {}
-    missing_values = []
-    for split_arg in split_args:
-        key, value = split_arg.split("=")
-        if value is None or len(value.strip()) == 0:
-            missing_values.append(key)
+    i = 0
+    while i < len(parts):
+        if parts[i].startswith("--"):
+            key = parts[i][2:]  # Remove '--' prefix to get the key
+            # Collect all non-parameter parts as a single value
+            value_parts = []
+            i += 1
+            while i < len(parts) and not parts[i].startswith("--"):
+                value_parts.append(parts[i])
+                i += 1
+            # Join the collected value parts with a space
+            value = " ".join(value_parts)
+
+            # Convert value to integer if possible, otherwise keep it as a string
+            if value.isdigit():
+                value = int(value)
+
+            # Assign the collected value or True for flags
+            result_dict[key] = value if value_parts else True
         else:
-            key = key.lstrip("-")
-            value = int(value) if value.isdigit() else value.strip()
-            result_dict[key] = value
-    return result_dict, missing_values
+            i += 1
+    return result_dict
 
 
 def send_command_received_message(response_url: str, command_text: str) -> None:
