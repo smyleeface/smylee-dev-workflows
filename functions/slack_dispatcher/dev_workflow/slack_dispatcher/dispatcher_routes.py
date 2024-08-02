@@ -24,10 +24,10 @@ def run(ctx):
 
     slack_utils.send_command_received_message(response_url, command_text)
     action_requested = command_text.split(" ", 1)[0]
-    command_arguments, missing_values = slack_utils.get_command_arguments(command_text)
+    command_arguments = slack_utils.get_command_arguments(command_text)
 
     if action_requested == "hugo-cover-image":
-        route_hugo_cover.start(ctx, command_arguments, missing_values)
+        route_hugo_cover.start(ctx, command_arguments)
     else:
         route_unknown_command.start(response_url, action_requested)
 
