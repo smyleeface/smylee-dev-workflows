@@ -14,6 +14,7 @@ UUID=$(uuidgen)
 BUILD_ID=${UUID##*-}
 SHA=$(git rev-parse --short $(git rev-parse HEAD))
 REPO_NAME=$(basename $(git rev-parse --show-toplevel))
+PYTHON_NAMESPACE="dev_workflow"
 S3_BUCKET=$(aws cloudformation list-exports --query "Exports[?Name=='S3::BucketForUploadsUsWest2-Name'].Value" --output text)
 echo "############ BUILD_ID: ${BUILD_ID}"
 
@@ -39,7 +40,7 @@ if [ -d "${path_to_functions}" ]; then
         pip install --platform manylinux2014_x86_64 --only-binary=:all: --target ${BUILD_ARTIFACTS_PATH}/${function_name} -r requirements.txt
 
         # Copy application code to directory
-        cp -r dev_workflow ${BUILD_ARTIFACTS_PATH}/${function_name}
+        cp -r ${PYTHON_NAMESPACE} ${BUILD_ARTIFACTS_PATH}/${function_name}
 
         # Change to the build directory
         cd ${BUILD_ARTIFACTS_PATH}/${function_name}

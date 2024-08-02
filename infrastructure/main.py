@@ -95,7 +95,7 @@ if __name__ == "__main__":
         application_prefix,
         s3_bucket_for_artifacts_param_name,
         pull_request_merged_s3_zip_path_param_name,
-        '/SmyleeDevWorkflows',
+        app_parameter_store_path,
         primary_kms_arn,
         s3_bucket_for_payloads
     )
