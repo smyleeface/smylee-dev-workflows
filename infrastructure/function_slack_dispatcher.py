@@ -17,7 +17,7 @@ class FunctionSlackDispatcher:
             app_parameter_store_path,
             primary_kms_arn,
             s3_bucket_for_payloads,
-            image_generator_topic_arn_name
+            image_generator_topic_arn_name,
     ):
         self._app_name = "FunctionSlackDispatcher"
         self._api_path_part_base = "slack"
@@ -45,9 +45,11 @@ class FunctionSlackDispatcher:
             Environment=awslambda.Environment(
                 Variables={
                     "S3_BUCKET_FOR_PAYLOADS": Ref(self._s3_bucket_for_payloads),
-                    "IMAGE_GENERATOR_TOPIC_ARN": ImportValue(Ref(self._image_generator_topic_arn_name))
+                    "IMAGE_GENERATOR_TOPIC_ARN": ImportValue(
+                        Ref(self._image_generator_topic_arn_name)
+                    ),
                 }
-            )
+            ),
         )
 
     def get_function_api_gateway_resource(self) -> apigateway.Resource:
@@ -143,7 +145,9 @@ class FunctionSlackDispatcher:
         function_event_invoke_config = self.get_function_event_invoke_config(function_definition)
         awslambda_permission = self.get_lambda_trigger_permissions(function_definition)
         api_gateway_resource = self.get_function_api_gateway_resource()
-        api_gateway_resource_path = self.get_function_api_gateway_resource_path(api_gateway_resource)
+        api_gateway_resource_path = self.get_function_api_gateway_resource_path(
+            api_gateway_resource
+        )
         api_gateway_method = self.get_function_api_gateway_method(
             api_gateway_resource_path, function_definition
         )
@@ -167,7 +171,7 @@ class FunctionSlackDispatcher:
             SourceArn=Sub(
                 "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGatewayDefinition}/*/POST/${PathPart}",
                 ApiGatewayDefinition=Ref(self._api_gateway_rest_api),
-                PathPart=self._api_path_part_base + '/' + self._api_path_part_command,
+                PathPart=self._api_path_part_base + "/" + self._api_path_part_command,
             ),
         )
 
@@ -197,7 +201,7 @@ class FunctionSlackDispatcher:
             Action=[
                 Action("sns", "Publish"),
             ],
-            Resource=[Sub("arn:aws:sns:${AWS::Region}:${AWS::AccountId}:DevWorkflow-*")],
+            Resource=[ImportValue(Ref(self._image_generator_topic_arn_name))],
         )
 
         allow_write_to_s3_bucket = Statement(
@@ -242,7 +246,7 @@ class FunctionSlackDispatcher:
                 allow_get_parameter_statement,
                 allow_kms_decrypt,
                 allow_publish_to_topic,
-                allow_write_to_s3_bucket
+                allow_write_to_s3_bucket,
             ],
         )
 
