@@ -1,3 +1,2 @@
-../../shared/utils
 boto3==1.28.42
 requests==2.31.0
