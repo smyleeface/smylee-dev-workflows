@@ -8,6 +8,7 @@ from api_gateway import apis
 from function_dispatcher import FunctionDispatcher
 from function_pull_request_open import FunctionPullRequestOpen
 from function_pull_request_merged import FunctionPullRequestMerged
+from function_slack_dispatcher import FunctionSlackDispatcher
 
 
 if __name__ == "__main__":
@@ -31,7 +32,6 @@ if __name__ == "__main__":
 
     # primary s3 bucket for uploading artifacts
     s3_bucket_for_artifacts_param_name = "BucketForUploadsUsWest2"
-    s3_buckets_for_artifacts_import = ImportValue("S3::BucketForUploadsUsWest2-Name")
     s3_bucket_for_artifacts = Parameter(s3_bucket_for_artifacts_param_name, Type="String")
 
     # s3 bucket for uploading payload requests
@@ -94,7 +94,7 @@ if __name__ == "__main__":
         application_prefix,
         s3_bucket_for_artifacts_param_name,
         pull_request_merged_s3_zip_path_param_name,
-        '/SmyleeDevWorkflows',
+        app_parameter_store_path,
         primary_kms_arn,
         s3_bucket_for_payloads
     )
@@ -106,6 +106,30 @@ if __name__ == "__main__":
     main_template.add_parameter(dispatcher_function_s3_zip_path)
     main_template.add_parameter(pull_request_open_s3_zip_path)
     main_template.add_parameter(pull_request_merged_s3_zip_path)
+
+    # Slack Dispatcher Function
+    slack_dispatcher_function_s3_zip_path_param_name = "SlackDispatcherFunctionS3ZipPath"
+    slack_dispatcher_function_s3_zip_path = Parameter(
+        slack_dispatcher_function_s3_zip_path_param_name, Type="String"
+    )
+    image_generator_topic_arn_export_name = Parameter(
+        "ImageGeneratorTopicArnExportName",
+        Type="String",
+        Description="Arn for the SNS topic to trigger the image generator function"
+    )
+    slack_dispatcher_function = FunctionSlackDispatcher(
+        application_prefix,
+        s3_bucket_for_artifacts_param_name,
+        slack_dispatcher_function_s3_zip_path_param_name,
+        api_gateway_definitions.api_gateway_rest_api,
+        app_parameter_store_path,
+        primary_kms_arn,
+        s3_bucket_for_payloads,
+        image_generator_topic_arn_export_name
+    )
+    main_template = slack_dispatcher_function.add_resource(main_template)
+    main_template.add_parameter(image_generator_topic_arn_export_name)
+    main_template.add_parameter(slack_dispatcher_function_s3_zip_path)
 
     with open(os.path.join(os.path.dirname(__file__), template_file), "w") as cf_file:
         cf_file.write(main_template.to_yaml())

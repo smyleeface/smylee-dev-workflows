@@ -66,7 +66,7 @@ def lambda_handler(event, context):
     commits = pull_request.get_commits()
     list_of_commit_messages = list(commit.commit.message for commit in commits)
     logger.debug(list_of_commit_messages)
-    prompt_template = "<s>[INST]Summarize the following commits into a pull request description. Don't list the commit messages in the summary.\n{0}\n[/INST]"
+    prompt_template = "<s>[INST]Summarize the following commits into a pull request description. Don't list the commit messages in the summary. Lay off the fluff. \n{0}\n[/INST]"
     commit_message_string = '\n'.join(list_of_commit_messages)[:200]
     input_text = {
         "prompt": prompt_template.format(commit_message_string),
