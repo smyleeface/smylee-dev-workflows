@@ -9,15 +9,15 @@ from troposphere.iam import Policy
 class FunctionSlackDispatcher:
 
     def __init__(
-            self,
-            app_prefix,
-            application_s3_param,
-            application_zip_param,
-            api_gateway_rest_api,
-            app_parameter_store_path,
-            primary_kms_arn,
-            s3_bucket_for_payloads,
-            image_generator_topic_arn_name,
+        self,
+        app_prefix,
+        application_s3_param,
+        application_zip_param,
+        api_gateway_rest_api,
+        app_parameter_store_path,
+        primary_kms_arn,
+        s3_bucket_for_payloads,
+        image_generator_topic_arn_name,
     ):
         self._app_name = "FunctionSlackDispatcher"
         self._api_path_part_base = "slack"
@@ -69,7 +69,7 @@ class FunctionSlackDispatcher:
         )
 
     def get_function_api_gateway_method(
-            self, api_gateway_resource: apigateway.Resource, function_definition: awslambda.Function
+        self, api_gateway_resource: apigateway.Resource, function_definition: awslambda.Function
     ) -> apigateway.Method:
         return apigateway.Method(
             self._app_name + "ApiGatewayMethod",
@@ -176,7 +176,7 @@ class FunctionSlackDispatcher:
         )
 
     def get_function_event_invoke_config(
-            self, function_definition: awslambda.Function
+        self, function_definition: awslambda.Function
     ) -> awslambda.EventInvokeConfig:
         return awslambda.EventInvokeConfig(
             self._app_name + "EventInvokeConfig",
